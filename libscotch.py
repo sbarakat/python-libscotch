@@ -2,37 +2,11 @@
 import numpy as np
 from ctypes import cdll, POINTER, c_int, c_double, c_void_p
 
-import networkit
 import networkx as nx
+from shared import read_metis
 
 class GraphStructureException(Exception):
     """When SCOTCH_graphBuild() returns 1 if the graph structure has not been successfully set with all of the input data."""
-
-def load_graph(path):
-    print("Loading graph data...")
-    nkG = networkit.graphio.METISGraphReader().read(path)
-
-    # convert to networkx Graph
-    G = networkit.nxadapter.nk2nx(nkG)
-
-    # add node weights from METIS file
-    with open(path, "r") as metis:
-
-        # read meta data from first line
-        first_line = next(metis).split()
-        m_nodes = int(first_line[0])
-        m_edges = int(first_line[1])
-
-        for i, line in enumerate(metis):
-            if line.strip():
-                weight = line.split()[0]
-                G.add_nodes_from([i], weight=str(weight))
-            else:
-                # blank line indicates no node weight
-                G.add_nodes_from([i], weight=0.0)
-
-    return G
-
 
 class libScotch(object):
     def __init__(self):
@@ -137,7 +111,9 @@ class libScotch(object):
 f = libScotch()
 print(f.version())
 
-G = load_graph("/home/sami/py-graph/data/oneshot_fennel_weights.txt")
+print("Loading graph data...")
+G = read_metis("oneshot_fennel_weights.txt")
+
 scotch_graph = f.networkx_to_scotch_graph(G)
 
 print(scotch_graph)
